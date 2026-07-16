@@ -21,3 +21,9 @@ export const movimientoSchema = z.object({
 })
 
 export type MovimientoInput = z.infer<typeof movimientoSchema>
+
+export const categoriaSchema = z.object({
+  nombre: z.string().min(2, 'El nombre es requerido').max(60),
+})
+
+export type CategoriaInput = z.infer<typeof categoriaSchema>

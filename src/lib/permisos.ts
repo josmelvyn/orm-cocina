@@ -1,11 +1,11 @@
 
 export const RUTAS_PROTEGIDAS: { prefijo: string; permisos: string[] }[] = [
  // { prefijo: '/inventario', permisos: ['inventario.ver'] },
-  { prefijo: '/recetas', permisos: ['receta.ver'] },
+  //{ prefijo: '/recetas', permisos: ['receta.ver'] },
   { prefijo: '/escuelas', permisos: ['escuela.ver'] },
   { prefijo: '/instituciones', permisos: ['institucion.ver'] },
-  { prefijo: '/conduces', permisos: ['conduce.ver'] },
-  { prefijo: '/facturacion', permisos: ['factura.ver'] },
+ // { prefijo: '/conduces', permisos: ['conduce.ver'] },
+  //{ prefijo: '/facturacion', permisos: ['factura.ver'] },
   { prefijo: '/reportes', permisos: ['reporte.ver'] },
   { prefijo: '/usuarios', permisos: ['usuario.ver'] },
   { prefijo: '/roles', permisos: ['rol.administrar'] },

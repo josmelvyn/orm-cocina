@@ -33,6 +33,31 @@ export async function listarCategorias() {
   return prisma.categoriaInsumo.findMany({ orderBy: { nombre: 'asc' } })
 }
 
+export async function listarCategoriasConConteo() {
+  return prisma.categoriaInsumo.findMany({
+    orderBy: { nombre: 'asc' },
+    include: { _count: { select: { insumos: true } } },
+  })
+}
+
+export async function crearCategoria(nombre: string) {
+  return prisma.categoriaInsumo.create({ data: { nombre } })
+}
+
+export async function actualizarCategoria(id: string, nombre: string) {
+  return prisma.categoriaInsumo.update({ where: { id }, data: { nombre } })
+}
+
+export async function eliminarCategoria(id: string) {
+  const insumosAsociados = await prisma.insumo.count({ where: { categoriaId: id } })
+  if (insumosAsociados > 0) {
+    throw new Error(
+      `No se puede eliminar: hay ${insumosAsociados} insumo(s) usando esta categoría.`
+    )
+  }
+  return prisma.categoriaInsumo.delete({ where: { id } })
+}
+
 export async function crearInsumo(data: InsumoInput) {
   return prisma.insumo.create({
     data: {

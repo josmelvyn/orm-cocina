@@ -10,9 +10,9 @@ type Insumo = {
   codigo: string
   nombre: string
   unidadMedida: string
-  stockActual: unknown // Decimal serializado
-  stockMinimo: unknown
-  costoUnitario: unknown
+  stockActual: number
+  stockMinimo: number
+  costoUnitario: number
   categoria: { nombre: string } | null
 }
 

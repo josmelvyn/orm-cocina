@@ -1,0 +1,310 @@
+// ============================================================
+// SCHEMA PRISMA - Sistema de Gestión Cocina Industrial
+// Módulos: Auth/Roles, Inventario, Recetas, Conduces, Facturación
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// AUTENTICACIÓN Y ROLES
+// ============================================================
+
+model Rol {
+  id          String   @id @default(cuid())
+  nombre      String   @unique // ADMIN, PRODUCCION, DESPACHO, FACTURACION, SUPERVISOR
+  descripcion String?
+  permisos    Permiso[]
+  usuarios    Usuario[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("roles")
+}
+
+model Permiso {
+  id     String @id @default(cuid())
+  codigo String @unique // ej: "conduce.crear", "factura.emitir", "inventario.editar"
+  modulo String // ej: "conduce", "factura", "inventario", "receta", "reporte"
+  roles  Rol[]
+
+  @@map("permisos")
+}
+
+model Usuario {
+  id            String    @id @default(cuid())
+  nombre        String
+  email         String    @unique
+  password      String
+  rolId         String
+  rol           Rol       @relation(fields: [rolId], references: [id])
+  activo        Boolean   @default(true)
+  ultimoAcceso  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relaciones de auditoría
+  conducesCreados   Conduce[]              @relation("ConduceCreadoPor")
+  facturasCreadas   Factura[]              @relation("FacturaCreadaPor")
+  movimientosCreados MovimientoInventario[] @relation("MovimientoCreadoPor")
+
+  // NextAuth (opcional, si usas Auth.js con estrategia de sesión en BD)
+  sessions Session[]
+  accounts Account[]
+
+  @@map("usuarios")
+}
+
+// --- Tablas requeridas por Auth.js (NextAuth) si usas adapter de Prisma ---
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  usuario           Usuario @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  usuario      Usuario  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ============================================================
+// INSTITUCIONES Y ESCUELAS
+// ============================================================
+
+model Institucion {
+  id         String    @id @default(cuid())
+  nombre     String    // ej: Ministerio de Educación / INABIE
+  rnc        String    @unique
+  direccion  String?
+  telefono   String?
+  email      String?
+  activo     Boolean   @default(true)
+  escuelas   Escuela[]
+  facturas   Factura[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("instituciones")
+}
+
+model Escuela {
+  id            String      @id @default(cuid())
+  codigo        String      @unique // código regional/distrital
+  nombre        String
+  direccion     String?
+  telefono      String?
+  encargado     String?     // director/encargado que recibe
+  institucionId String
+  institucion   Institucion @relation(fields: [institucionId], references: [id])
+  activo        Boolean     @default(true)
+  conduces      Conduce[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([institucionId])
+  @@map("escuelas")
+}
+
+// ============================================================
+// INVENTARIO
+// ============================================================
+
+model CategoriaInsumo {
+  id       String   @id @default(cuid())
+  nombre   String   @unique // ej: Cárnicos, Víveres, Lácteos, Granos
+  insumos  Insumo[]
+
+  @@map("categorias_insumo")
+}
+
+model Insumo {
+  id            String                  @id @default(cuid())
+  codigo        String                  @unique
+  nombre        String
+  categoriaId   String?
+  categoria     CategoriaInsumo?        @relation(fields: [categoriaId], references: [id])
+  unidadMedida  String                  // lb, kg, unidad, litro, galón...
+  stockActual   Decimal                 @default(0) @db.Decimal(12, 3)
+  stockMinimo   Decimal                 @default(0) @db.Decimal(12, 3)
+  costoUnitario Decimal                 @db.Decimal(12, 2)
+  activo        Boolean                 @default(true)
+  movimientos   MovimientoInventario[]
+  ingredientes  RecetaIngrediente[]
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@index([categoriaId])
+  @@map("insumos")
+}
+
+enum TipoMovimiento {
+  ENTRADA
+  SALIDA
+  AJUSTE
+  MERMA
+}
+
+model MovimientoInventario {
+  id            String         @id @default(cuid())
+  insumoId      String
+  insumo        Insumo         @relation(fields: [insumoId], references: [id])
+  tipo          TipoMovimiento
+  cantidad      Decimal        @db.Decimal(12, 3)
+  costoUnitario Decimal?       @db.Decimal(12, 2)
+  motivo        String?        // "compra", "produccion", "merma", "ajuste inventario"
+  conduceId     String?        // referencia si la salida proviene de producción para un conduce
+  conduce       Conduce?       @relation(fields: [conduceId], references: [id])
+  creadoPorId   String
+  creadoPor     Usuario        @relation("MovimientoCreadoPor", fields: [creadoPorId], references: [id])
+  createdAt     DateTime       @default(now())
+
+  @@index([insumoId])
+  @@index([conduceId])
+  @@map("movimientos_inventario")
+}
+
+// ============================================================
+// MAESTRO DE RECETAS
+// ============================================================
+
+enum TipoServicio {
+  DESAYUNO
+  ALMUERZO
+  MERIENDA
+}
+
+model Receta {
+  id              String              @id @default(cuid())
+  codigo          String              @unique
+  nombre          String              // ej: "Avena con pan y huevo"
+  tipoServicio    TipoServicio
+  porcionesBase   Int                 @default(1) // rendimiento base de la receta
+  costoPorcion    Decimal?            @db.Decimal(12, 2) // calculado/cacheado
+  precioPorcion   Decimal             @db.Decimal(12, 2) // precio de venta/facturación por ración
+  activo          Boolean             @default(true)
+  ingredientes    RecetaIngrediente[]
+  conduceDetalles ConduceDetalle[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@map("recetas")
+}
+
+model RecetaIngrediente {
+  id       String  @id @default(cuid())
+  recetaId String
+  receta   Receta  @relation(fields: [recetaId], references: [id], onDelete: Cascade)
+  insumoId String
+  insumo   Insumo  @relation(fields: [insumoId], references: [id])
+  cantidad Decimal @db.Decimal(12, 3) // cantidad de insumo por porción base
+
+  @@unique([recetaId, insumoId])
+  @@map("receta_ingredientes")
+}
+
+// ============================================================
+// CONDUCES
+// ============================================================
+
+enum EstadoConduce {
+  EMITIDO
+  FACTURADO
+  ANULADO
+}
+
+model Conduce {
+  id            String                  @id @default(cuid())
+  numero        String                  @unique // consecutivo: CND-000123
+  fecha         DateTime                @default(now())
+  tipoServicio  TipoServicio
+  escuelaId     String
+  escuela       Escuela                 @relation(fields: [escuelaId], references: [id])
+  estado        EstadoConduce           @default(EMITIDO)
+  observaciones String?
+  detalles      ConduceDetalle[]
+  movimientos   MovimientoInventario[]
+  facturaId     String?
+  factura       Factura?                @relation(fields: [facturaId], references: [id])
+  creadoPorId   String
+  creadoPor     Usuario                 @relation("ConduceCreadoPor", fields: [creadoPorId], references: [id])
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@index([escuelaId])
+  @@index([facturaId])
+  @@index([fecha])
+  @@map("conduces")
+}
+
+model ConduceDetalle {
+  id             String  @id @default(cuid())
+  conduceId      String
+  conduce        Conduce @relation(fields: [conduceId], references: [id], onDelete: Cascade)
+  recetaId       String
+  receta         Receta  @relation(fields: [recetaId], references: [id])
+  cantidad       Int     // # de raciones entregadas
+  precioUnitario Decimal @db.Decimal(12, 2)
+  subtotal       Decimal @db.Decimal(12, 2)
+
+  @@index([conduceId])
+  @@map("conduce_detalles")
+}
+
+// ============================================================
+// FACTURACIÓN
+// ============================================================
+
+enum EstadoFactura {
+  EMITIDA
+  ANULADA
+  PAGADA
+}
+
+model Factura {
+  id            String        @id @default(cuid())
+  numeroFactura String        @unique // consecutivo interno
+  ncf           String        @unique // comprobante fiscal gubernamental (e-CF)
+  tipoNcf       String        // B01, B14, B15, etc.
+  institucionId String
+  institucion   Institucion   @relation(fields: [institucionId], references: [id])
+  fechaEmision  DateTime      @default(now())
+  periodoInicio DateTime      // rango de conduces cubiertos
+  periodoFin    DateTime
+  subtotal      Decimal       @db.Decimal(14, 2)
+  itbis         Decimal       @db.Decimal(14, 2)
+  total         Decimal       @db.Decimal(14, 2)
+  estado        EstadoFactura @default(EMITIDA)
+  conduces      Conduce[]
+  creadoPorId   String
+  creadoPor     Usuario       @relation("FacturaCreadaPor", fields: [creadoPorId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([institucionId])
+  @@index([fechaEmision])
+  @@map("facturas")
+}

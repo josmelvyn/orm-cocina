@@ -13,6 +13,12 @@ export default async function MovimientosPage() {
     ...m,
     cantidad: m.cantidad.toString(),
     costoUnitario: m.costoUnitario?.toString() ?? null,
+    insumo: {
+      ...m.insumo,
+      stockActual: m.insumo.stockActual.toString(),
+      stockMinimo: m.insumo.stockMinimo.toString(),
+      costoUnitario: m.insumo.costoUnitario?.toString() ?? null,
+    },
   }))
 
   // Solo mandamos al client component los campos planos que necesita el <select>.

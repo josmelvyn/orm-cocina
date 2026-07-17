@@ -68,7 +68,9 @@ export function UsuarioForm({ roles, usuario }: { roles: Rol[]; usuario?: Usuari
         <Label htmlFor="rolId">Rol</Label>
         <Select name="rolId" defaultValue={usuario?.rolId}>
           <SelectTrigger id="rolId">
-            <SelectValue placeholder="Selecciona un rol" />
+            <SelectValue placeholder="Selecciona un rol" >
+              {(value: string) => roles.find ((e) => e.id)?.nombre}
+              </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {roles.map((r) => (

@@ -98,7 +98,9 @@ export function InsumoForm({
         <Label htmlFor="categoriaId">Categoría</Label>
         <Select name="categoriaId" defaultValue={insumo?.categoriaId ?? undefined}>
           <SelectTrigger id="categoriaId">
-            <SelectValue placeholder="Selecciona una categoría" />
+            <SelectValue placeholder="Selecciona una categoría" >
+              {(value: string) => categorias.find((e) => e.id === value)?.nombre}
+              </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {categorias.map((c) => (

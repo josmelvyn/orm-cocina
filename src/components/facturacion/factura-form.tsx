@@ -107,7 +107,7 @@ export function FacturaForm({ instituciones }: { instituciones: Institucion[] })
       <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6">
         <div className="space-y-1.5">
           <Label htmlFor="institucionId">Institución gubernamental</Label>
-          <Select name="institucionId" onValueChange={(value) => setInstitucionId(String(value))}>
+          <Select name="institucionId" onValueChange={(v) => setInstitucionId(v as string)}>
             <SelectTrigger id="institucionId">
               <SelectValue placeholder="Selecciona una institución" />
             </SelectTrigger>
@@ -157,16 +157,21 @@ export function FacturaForm({ instituciones }: { instituciones: Institucion[] })
             {errores.ncf && <p className="text-xs text-red-600">{errores.ncf}</p>}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="itbisPorcentaje">ITBIS (%)</Label>
-            <Input
-              id="itbisPorcentaje"
-              name="itbisPorcentaje"
-              type="number"
-              step="0.01"
-              value={itbisPorcentaje}
-              onChange={(e) => setItbisPorcentaje(e.target.value)}
-            />
+            <Label htmlFor="ncfValidoHasta">NCF válido hasta</Label>
+            <Input id="ncfValidoHasta" name="ncfValidoHasta" type="date" />
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="itbisPorcentaje">ITBIS (%)</Label>
+          <Input
+            id="itbisPorcentaje"
+            name="itbisPorcentaje"
+            type="number"
+            step="0.01"
+            value={itbisPorcentaje}
+            onChange={(e) => setItbisPorcentaje(e.target.value)}
+          />
         </div>
       </div>
 

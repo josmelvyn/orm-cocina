@@ -63,12 +63,18 @@ export function MovimientoForm({ insumos }: { insumos: Insumo[] }) {
         <Label htmlFor="insumoId">Insumo</Label>
         <Select name="insumoId">
           <SelectTrigger id="insumoId">
-            <SelectValue placeholder="Selecciona un insumo" />
+            <SelectValue placeholder="Selecciona un insumo" >
+            {(value: string) =>insumos.find((e) => e.id === value)?.nombre}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {insumos.map((i) => (
               <SelectItem key={i.id} value={i.id}>
-                {i.codigo} — {i.nombre} ({i.unidadMedida})
+                <span className="flex flex-col items-start whitespace-normal break-words max-w-[250px]">
+                <span className='font-medium'>{i.codigo} </span>
+                 <span className='font-medium'> {i.nombre} </span>
+                 <span className='font-medium'> ({i.unidadMedida})</span>
+                </span>
               </SelectItem>
             ))}
           </SelectContent>

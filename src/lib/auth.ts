@@ -1,3 +1,6 @@
+// src/lib/auth.ts
+// Configuración completa de NextAuth (corre en Node runtime: Server Actions, Route Handlers).
+// Aquí sí podemos usar Prisma y bcrypt.
 
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
@@ -57,25 +60,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-
-    // Se ejecuta al crear/actualizar el JWT. Aquí inyectamos rol y permisos.
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-        token.rol = user.rol
-        token.permisos = user.permisos
-      }
-      return token
-    },
-
-    // Se ejecuta cada vez que se lee la sesión en el cliente/servidor.
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string
-        session.user.rol = token.rol as string
-        session.user.permisos = token.permisos as string[]
-      }
-      return session
-    },
   },
 })

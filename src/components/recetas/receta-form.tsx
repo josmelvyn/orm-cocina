@@ -187,7 +187,9 @@ export function RecetaForm({ insumos, receta }: { insumos: Insumo[]; receta?: Re
                     onValueChange={(v) => actualizarIngrediente(index, 'insumoId', v ?? '')}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un insumo" />
+                      <SelectValue placeholder="Selecciona un insumo">
+                      {(value: string) => insumos.find((e) => e.id === value)?.nombre}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {insumos.map((i) => (

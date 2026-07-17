@@ -53,6 +53,8 @@ model Usuario {
   conducesCreados   Conduce[]              @relation("ConduceCreadoPor")
   facturasCreadas   Factura[]              @relation("FacturaCreadaPor")
   movimientosCreados MovimientoInventario[] @relation("MovimientoCreadoPor")
+  gastosCreados     Gasto[]                @relation("GastoCreadoPor")
+  ingresosCreados   Ingreso[]              @relation("IngresoCreadoPor")
 
   // NextAuth (opcional, si usas Auth.js con estrategia de sesión en BD)
   sessions Session[]
@@ -92,6 +94,22 @@ model Session {
 }
 
 // ============================================================
+// EMPRESA (datos del suplidor — singleton, un solo registro)
+// ============================================================
+
+model Empresa {
+  id        String   @id @default(cuid())
+  nombre    String   // ej: "Ydelsa Mariana Colón Bautista"
+  direccion String
+  telefono  String
+  email     String?
+  rnc       String
+  updatedAt DateTime @updatedAt
+
+  @@map("empresa")
+}
+
+// ============================================================
 // INSTITUCIONES Y ESCUELAS
 // ============================================================
 
@@ -112,18 +130,22 @@ model Institucion {
 }
 
 model Escuela {
-  id            String      @id @default(cuid())
-  codigo        String      @unique // código regional/distrital
-  nombre        String
-  direccion     String?
-  telefono      String?
-  encargado     String?     // director/encargado que recibe
-  institucionId String
-  institucion   Institucion @relation(fields: [institucionId], references: [id])
-  activo        Boolean     @default(true)
-  conduces      Conduce[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                String      @id @default(cuid())
+  codigo            String      @unique // código regional/distrital
+  nombre            String
+  direccion         String?
+  telefono          String?
+  encargado         String?     // director/encargado que recibe (alias de "director")
+  director          String?     // Director del Centro, tal como aparece en el conduce oficial
+  provincia         String?     // Provincia o Municipio
+  ruta              String?     // Ruta de distribución (ej: "A - San Francisco")
+  regionalDistrito  String?     // ej: "07/05"
+  institucionId     String
+  institucion       Institucion @relation(fields: [institucionId], references: [id])
+  activo            Boolean     @default(true)
+  conduces          Conduce[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   @@index([institucionId])
   @@map("escuelas")
@@ -245,6 +267,10 @@ model Conduce {
   escuela       Escuela                 @relation(fields: [escuelaId], references: [id])
   estado        EstadoConduce           @default(EMITIDO)
   observaciones String?
+  postre        String?                 // ej: "1 Guineo maduro mediano" — línea libre, no ligada a receta/insumo
+  nombreRecibe  String?                 // capturado al confirmar recepción física
+  fechaRecepcion DateTime?
+  horaRecepcion String?
   detalles      ConduceDetalle[]
   movimientos   MovimientoInventario[]
   facturaId     String?
@@ -289,6 +315,7 @@ model Factura {
   numeroFactura String        @unique // consecutivo interno
   ncf           String        @unique // comprobante fiscal gubernamental (e-CF)
   tipoNcf       String        // B01, B14, B15, etc.
+  ncfValidoHasta DateTime?    // fecha de vencimiento de la secuencia NCF autorizada por la DGII
   institucionId String
   institucion   Institucion   @relation(fields: [institucionId], references: [id])
   fechaEmision  DateTime      @default(now())
@@ -301,10 +328,65 @@ model Factura {
   conduces      Conduce[]
   creadoPorId   String
   creadoPor     Usuario       @relation("FacturaCreadaPor", fields: [creadoPorId], references: [id])
+  ingreso       Ingreso?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   @@index([institucionId])
   @@index([fechaEmision])
   @@map("facturas")
+}
+
+// ============================================================
+// CONTABILIDAD
+// ============================================================
+
+model CategoriaGasto {
+  id        String   @id @default(cuid())
+  nombre    String   @unique // ej: Nómina, Combustible, Servicios, Compra de insumos, Mantenimiento, Otros
+  activo    Boolean  @default(true)
+  gastos    Gasto[]
+  createdAt DateTime @default(now())
+
+  @@map("categorias_gasto")
+}
+
+model Gasto {
+  id           String         @id @default(cuid())
+  fecha        DateTime       @default(now())
+  categoriaId  String
+  categoria    CategoriaGasto @relation(fields: [categoriaId], references: [id])
+  descripcion  String
+  monto        Decimal        @db.Decimal(14, 2)
+  metodoPago   String         // Efectivo, Transferencia, Cheque, Tarjeta
+  comprobante  String?        // No. de factura/recibo del proveedor, si aplica
+  creadoPorId  String
+  creadoPor    Usuario        @relation("GastoCreadoPor", fields: [creadoPorId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([categoriaId])
+  @@index([fecha])
+  @@map("gastos")
+}
+
+enum OrigenIngreso {
+  FACTURA // se generó automáticamente al marcar una factura como PAGADA
+  MANUAL  // capturado a mano (donaciones, otros ingresos)
+}
+
+model Ingreso {
+  id          String        @id @default(cuid())
+  fecha       DateTime      @default(now())
+  concepto    String
+  monto       Decimal       @db.Decimal(14, 2)
+  origen      OrigenIngreso @default(MANUAL)
+  facturaId   String?       @unique // solo si origen = FACTURA
+  factura     Factura?      @relation(fields: [facturaId], references: [id])
+  creadoPorId String
+  creadoPor   Usuario       @relation("IngresoCreadoPor", fields: [creadoPorId], references: [id])
+  createdAt   DateTime      @default(now())
+
+  @@index([fecha])
+  @@map("ingresos")
 }

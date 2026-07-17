@@ -1,14 +1,16 @@
 // src/components/layout/sidebar.tsx
 import { auth } from '@/lib/auth'
-import { filtrarMenu } from '@/lib/filtrar-menu'
-import { SidebarNav } from '@/components/sidebar-nav'
-import { LogoutButton } from '@/components/logout-button'
+import { SidebarNav } from '@/components/layout/sidebar-nav'
+import { LogoutButton } from '@/components/layout/logout-button'
 
 export async function Sidebar() {
   const session = await auth()
 
+  // Solo mandamos datos planos (strings) al client component. Los íconos de
+  // lucide-react son objetos React (no serializables), así que el filtrado
+  // del menú (que decide qué ícono usar) debe ocurrir DENTRO del client
+  // component, no aquí en el servidor.
   const permisosUsuario = session?.user?.permisos ?? []
-  const menuVisible = filtrarMenu(permisosUsuario)
 
   return (
     <aside className="flex h-screen w-64 flex-col border-r border-slate-200 bg-white">
@@ -17,7 +19,7 @@ export async function Sidebar() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-4">
-        <SidebarNav items={menuVisible} />
+        <SidebarNav permisos={permisosUsuario} />
       </div>
 
       <div className="border-t border-slate-200 p-4">

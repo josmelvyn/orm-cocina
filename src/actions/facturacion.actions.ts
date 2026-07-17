@@ -33,6 +33,7 @@ function parsearFormFactura(formData: FormData) {
     institucionId: formData.get('institucionId'),
     ncf: formData.get('ncf'),
     tipoNcf: formData.get('tipoNcf'),
+    ncfValidoHasta: formData.get('ncfValidoHasta') || undefined,
     periodoInicio: formData.get('periodoInicio'),
     periodoFin: formData.get('periodoFin'),
     itbisPorcentaje: formData.get('itbisPorcentaje') || 18,
@@ -78,6 +79,22 @@ export async function anularFacturaAction(id: string): Promise<ActionResult> {
     return { success: true }
   } catch (e) {
     const mensaje = e instanceof Error ? e.message : 'No se pudo anular la factura.'
+    return { success: false, error: mensaje }
+  }
+}
+
+export async function marcarPagadaFacturaAction(id: string): Promise<ActionResult> {
+  const usuario = await requiereSesion()
+  requierePermiso(usuario.permisos, 'factura.emitir') // reusa el permiso de facturación
+
+  try {
+    await facturacionService.marcarFacturaPagada(id, usuario.id)
+    revalidatePath('/facturacion')
+    revalidatePath(`/facturacion/${id}`)
+    revalidatePath('/contabilidad')
+    return { success: true }
+  } catch (e) {
+    const mensaje = e instanceof Error ? e.message : 'No se pudo marcar como pagada.'
     return { success: false, error: mensaje }
   }
 }

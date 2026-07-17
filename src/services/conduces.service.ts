@@ -68,12 +68,20 @@ export async function crearConduce(data: ConduceInput, usuarioId: string) {
     })
     const recetaPorId = new Map(recetas.map((r) => [r.id, r]))
 
+    // DEBUG TEMPORAL: quita esto una vez resuelto el problema
+    console.log('IDs recibidos del formulario:', recetaIds)
+    console.log('IDs encontrados en la BD:', recetas.map((r) => r.id))
+
     // 1. Calcular consumo total de insumos agregando todas las recetas del conduce
     const consumoPorInsumo = new Map<string, number>()
 
     for (const detalle of data.detalles) {
       const receta = recetaPorId.get(detalle.recetaId)
-      if (!receta) throw new Error('Receta no encontrada')
+      if (!receta) {
+        throw new Error(
+          `Receta no encontrada (ID: ${detalle.recetaId}). Recarga la página de "Nuevo conduce" e inténtalo de nuevo.`
+        )
+      }
 
       const factor = detalle.cantidad / receta.porcionesBase
 
@@ -111,6 +119,7 @@ export async function crearConduce(data: ConduceInput, usuarioId: string) {
         tipoServicio: data.tipoServicio,
         escuelaId: data.escuelaId,
         observaciones: data.observaciones,
+        postre: data.postre || null,
         creadoPorId: usuarioId,
         detalles: {
           create: data.detalles.map((d) => {

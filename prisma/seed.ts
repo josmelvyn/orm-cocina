@@ -4,10 +4,8 @@
 
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-import { Pool } from 'pg';
 
-
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 // ------------------------------------------------------------
 // Definición de permisos por módulo
@@ -50,11 +48,18 @@ const PERMISOS = [
   { codigo: 'reporte.ver', modulo: 'reporte' },
   { codigo: 'reporte.exportar', modulo: 'reporte' },
 
+  // Contabilidad
+  { codigo: 'contabilidad.ver', modulo: 'contabilidad' },
+  { codigo: 'contabilidad.crear', modulo: 'contabilidad' },
+  { codigo: 'contabilidad.editar', modulo: 'contabilidad' },
+  { codigo: 'contabilidad.eliminar', modulo: 'contabilidad' },
+
   // Usuarios / Roles (administración)
   { codigo: 'usuario.ver', modulo: 'usuario' },
   { codigo: 'usuario.crear', modulo: 'usuario' },
   { codigo: 'usuario.editar', modulo: 'usuario' },
   { codigo: 'rol.administrar', modulo: 'rol' },
+  { codigo: 'empresa.editar', modulo: 'configuracion' },
 ] as const
 
 // ------------------------------------------------------------
@@ -103,6 +108,9 @@ const ROLES: Record<string, { descripcion: string; permisos: string[] }> = {
       'institucion.editar',
       'reporte.ver',
       'reporte.exportar',
+      'contabilidad.ver',
+      'contabilidad.crear',
+      'contabilidad.editar',
     ],
   },
   SUPERVISOR: {
@@ -116,6 +124,7 @@ const ROLES: Record<string, { descripcion: string; permisos: string[] }> = {
       'institucion.ver',
       'reporte.ver',
       'reporte.exportar',
+      'contabilidad.ver',
     ],
   },
 }
@@ -221,6 +230,17 @@ async function main() {
       costoUnitario: 35.0,
     },
   })
+
+  // 7. Categorías de gasto por defecto
+  console.log('→ Creando categorías de gasto...')
+  const categoriasGasto = ['Compra de insumos', 'Nómina', 'Combustible', 'Servicios (luz/agua)', 'Mantenimiento', 'Otros']
+  for (const nombre of categoriasGasto) {
+    await prisma.categoriaGasto.upsert({
+      where: { nombre },
+      update: {},
+      create: { nombre },
+    })
+  }
 
   console.log('✅ Seed completado.')
   console.log('   Usuario: admin@cocinaindustrial.com')

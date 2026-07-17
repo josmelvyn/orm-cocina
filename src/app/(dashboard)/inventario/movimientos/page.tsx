@@ -4,10 +4,16 @@ import { MovimientoForm } from '@/components/inventario/movimiento-form'
 import { MovimientoTable } from '@/components/inventario/movimiento-table'
 
 export default async function MovimientosPage() {
-  const [movimientos, insumosRaw] = await Promise.all([
+  const [movimientosRaw, insumosRaw] = await Promise.all([
     listarMovimientos({ limite: 100 }),
     listarInsumos(),
   ])
+
+  const movimientos = movimientosRaw.map((m) => ({
+    ...m,
+    cantidad: m.cantidad.toString(),
+    costoUnitario: m.costoUnitario?.toString() ?? null,
+  }))
 
   // Solo mandamos al client component los campos planos que necesita el <select>.
   const insumos = insumosRaw.map((i) => ({

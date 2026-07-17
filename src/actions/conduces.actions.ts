@@ -33,6 +33,7 @@ function parsearFormConduce(formData: FormData) {
     escuelaId: formData.get('escuelaId'),
     tipoServicio: formData.get('tipoServicio'),
     fecha: formData.get('fecha'),
+    postre: formData.get('postre') || undefined,
     observaciones: formData.get('observaciones') || undefined,
     detalles,
   })
@@ -58,7 +59,14 @@ export async function crearConduceAction(formData: FormData): Promise<ActionResu
     revalidatePath('/inventario')
     revalidatePath('/dashboard')
     return { success: true, id: conduce.id }
-  } catch (e) {
+  } catch (e: any) {
+    if (e?.code === 'P2003') {
+      return {
+        success: false,
+        error:
+          'Tu sesión está desincronizada con la base de datos (esto pasa si la BD se reseteó). Cierra sesión y vuelve a iniciar sesión.',
+      }
+    }
     const mensaje = e instanceof Error ? e.message : 'No se pudo crear el conduce.'
     return { success: false, error: mensaje }
   }

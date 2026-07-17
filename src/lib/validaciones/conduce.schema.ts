@@ -10,6 +10,7 @@ export const conduceSchema = z.object({
   escuelaId: z.string().min(1, 'Selecciona una escuela'),
   tipoServicio: z.enum(['DESAYUNO', 'ALMUERZO', 'MERIENDA']),
   fecha: z.string().min(1, 'La fecha es requerida'),
+  postre: z.string().max(100).optional(),
   observaciones: z.string().max(500).optional(),
   detalles: z.array(detalleConduceSchema).min(1, 'Agrega al menos una receta'),
 })

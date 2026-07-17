@@ -101,3 +101,16 @@ export async function actualizarReceta(id: string, data: RecetaInput) {
 export async function desactivarReceta(id: string) {
   return prisma.receta.update({ where: { id }, data: { activo: false } })
 }
+
+/**
+ * Trae todas las recetas activas con sus ingredientes y el stock actual
+ * de cada insumo. Usado por el módulo de pre-despacho para calcular,
+ * sin tocar la base de datos, cuánto insumo se necesita para X raciones.
+ */
+export async function listarRecetasParaDespacho() {
+  return prisma.receta.findMany({
+    where: { activo: true },
+    include: { ingredientes: { include: { insumo: true } } },
+    orderBy: { nombre: 'asc' },
+  })
+}

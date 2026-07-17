@@ -93,6 +93,7 @@ export async function generarFactura(data: FacturaInput, usuarioId: string) {
         numeroFactura,
         ncf: data.ncf,
         tipoNcf: data.tipoNcf,
+        ncfValidoHasta: data.ncfValidoHasta ? new Date(data.ncfValidoHasta) : null,
         institucionId: data.institucionId,
         periodoInicio: new Date(data.periodoInicio),
         periodoFin: new Date(data.periodoFin),
@@ -119,6 +120,37 @@ export async function generarFactura(data: FacturaInput, usuarioId: string) {
  * el inventario ya se descontó al crear los conduces, y anular la factura
  * no implica que la comida no se haya entregado.
  */
+/**
+ * Marca la factura como pagada. Solo aplica a facturas en estado EMITIDA
+ * (no se puede "pagar" una factura ya anulada). Al pagarla, registra
+ * automáticamente el ingreso correspondiente en el módulo de contabilidad.
+ */
+export async function marcarFacturaPagada(id: string, usuarioId: string) {
+  const factura = await prisma.factura.findUniqueOrThrow({ where: { id } })
+
+  if (factura.estado === 'ANULADA') {
+    throw new Error('No se puede marcar como pagada: esta factura está anulada.')
+  }
+  if (factura.estado === 'PAGADA') {
+    throw new Error('Esta factura ya está marcada como pagada.')
+  }
+
+  const [facturaActualizada] = await prisma.$transaction([
+    prisma.factura.update({ where: { id }, data: { estado: 'PAGADA' } }),
+    prisma.ingreso.create({
+      data: {
+        concepto: `Pago de factura ${factura.numeroFactura} (NCF ${factura.ncf})`,
+        monto: factura.total,
+        origen: 'FACTURA',
+        facturaId: factura.id,
+        creadoPorId: usuarioId,
+      },
+    }),
+  ])
+
+  return facturaActualizada
+}
+
 export async function anularFactura(id: string) {
   return prisma.$transaction(async (tx) => {
     const factura = await tx.factura.findUniqueOrThrow({
@@ -134,6 +166,10 @@ export async function anularFactura(id: string) {
       where: { id: { in: factura.conduces.map((c) => c.id) } },
       data: { estado: 'EMITIDO', facturaId: null },
     })
+
+    // Si la factura ya estaba pagada, elimina el ingreso contable asociado
+    // para que el estado de resultados no quede con un ingreso "fantasma".
+    await tx.ingreso.deleteMany({ where: { facturaId: id } })
 
     return tx.factura.update({ where: { id }, data: { estado: 'ANULADA' } })
   })

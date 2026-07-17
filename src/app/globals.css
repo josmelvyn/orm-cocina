@@ -127,4 +127,32 @@
   html {
     @apply font-sans;
   }
+
+  @media print {
+  /* Oculta el sidebar completo */
+  aside {
+    display: none !important;
+  }
+ 
+  /* El contenido principal ocupa todo el ancho, sin padding del dashboard */
+  main {
+    padding: 0 !important;
+    width: 100% !important;
+  }
+ 
+  /* Oculta cualquier elemento marcado explícitamente como no-imprimible */
+  .print\:hidden {
+    display: none !important;
+  }
+ 
+  /* Evita que las tablas corten filas a la mitad entre páginas */
+  tr {
+    break-inside: avoid;
+  }
+ 
+  /* Quita sombras y bordes redondeados innecesarios en la versión impresa */
+  body {
+    background: white !important;
+  }
+}
 }

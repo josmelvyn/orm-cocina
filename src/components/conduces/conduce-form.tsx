@@ -20,6 +20,7 @@ import {
 type Escuela = { id: string; nombre: string }
 type Receta = { id: string; nombre: string; tipoServicio: string; precioPorcion: number }
 type DetalleForm = { recetaId: string; cantidad: string }
+type DetalleInicial = { recetaId: string; cantidad: number }
 
 function formatoRD(valor: number) {
   return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(valor)
@@ -29,16 +30,35 @@ function hoyISO() {
   return new Date().toISOString().slice(0, 10)
 }
 
-export function ConduceForm({ escuelas, recetas }: { escuelas: Escuela[]; recetas: Receta[] }) {
+export function ConduceForm({
+  escuelas,
+  recetas,
+  detallesIniciales,
+}: {
+  escuelas: Escuela[]
+  recetas: Receta[]
+  detallesIniciales?: DetalleInicial[]
+}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null)
 
-  const [tipoServicio, setTipoServicio] = useState('DESAYUNO')
-  const [detalles, setDetalles] = useState<DetalleForm[]>([{ recetaId: '', cantidad: '' }])
-
   const recetaPorId = useMemo(() => new Map(recetas.map((r) => [r.id, r])), [recetas])
+
+  // Si vinimos del pre-despacho, detectamos el tipo de servicio a partir de
+  // la primera receta seleccionada (todas deberían ser del mismo servicio)
+  const tipoServicioInicial =
+    detallesIniciales && detallesIniciales.length > 0
+      ? recetaPorId.get(detallesIniciales[0].recetaId)?.tipoServicio ?? 'DESAYUNO'
+      : 'DESAYUNO'
+
+  const [tipoServicio, setTipoServicio] = useState(tipoServicioInicial)
+  const [detalles, setDetalles] = useState<DetalleForm[]>(
+    detallesIniciales && detallesIniciales.length > 0
+      ? detallesIniciales.map((d) => ({ recetaId: d.recetaId, cantidad: String(d.cantidad) }))
+      : [{ recetaId: '', cantidad: '' }]
+  )
 
   // Solo mostramos recetas que coincidan con el tipo de servicio seleccionado
   const recetasDisponibles = recetas.filter((r) => r.tipoServicio === tipoServicio)
@@ -95,7 +115,9 @@ export function ConduceForm({ escuelas, recetas }: { escuelas: Escuela[]; receta
             <Label htmlFor="escuelaId">Escuela</Label>
             <Select name="escuelaId">
               <SelectTrigger id="escuelaId">
-                <SelectValue placeholder="Selecciona una escuela" />
+                <SelectValue placeholder="Selecciona una escuela">
+                  {(value: string) => escuelas.find((e) => e.id === value)?.nombre}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {escuelas.map((e) => (
@@ -130,6 +152,11 @@ export function ConduceForm({ escuelas, recetas }: { escuelas: Escuela[]; receta
         </div>
 
         <div className="space-y-1.5">
+          <Label htmlFor="postre">Postre (opcional)</Label>
+          <Input id="postre" name="postre" placeholder="Ej: 1 Guineo maduro mediano" />
+        </div>
+
+        <div className="space-y-1.5">
           <Label htmlFor="observaciones">Observaciones (opcional)</Label>
           <Textarea id="observaciones" name="observaciones" rows={2} />
         </div>
@@ -161,15 +188,21 @@ export function ConduceForm({ escuelas, recetas }: { escuelas: Escuela[]; receta
                 <div className="flex-1">
                   <Select
                     value={d.recetaId}
-                    onValueChange={(v) => actualizarDetalle(index, 'recetaId', v ?? '')}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una receta" />
+                    onValueChange={(v) => actualizarDetalle(index, 'recetaId', v ?? "")}>
+                    <SelectTrigger className="h-auto min-h-[40px] py-2 border-b-2 border-slate-300 w-full">
+                    <SelectValue placeholder="Selecciona una receta" className="whitespace-normal text-left block line-clamp-2">
+                      {receta?.nombre}
+                    </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent >
                       {recetasDisponibles.map((r) => (
                         <SelectItem key={r.id} value={r.id}>
-                          {r.nombre} — {formatoRD(r.precioPorcion)}/ración
+                          <span className="flex flex-col items-start whitespace-normal break-words max-w-[250px]">
+                          <span className="font-medium">{r.nombre}</span>
+                          <span className="text-muted-foreground text-xs">
+          {                  formatoRD(r.precioPorcion)}/ración
+                          </span>
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>

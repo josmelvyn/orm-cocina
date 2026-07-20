@@ -52,7 +52,7 @@ function SidebarItem({ item, pathname }: { item: MenuItem; pathname: string }) {
   const activo = pathname === item.href || pathname.startsWith(item.href + '/')
   const [abierto, setAbierto] = useState(activo)
   
-const Icon = icons[item.icon as keyof typeof icons];
+  const Icon = icons[item.icon as unknown as keyof typeof icons]
 
   if (!tieneHijos) {
     return (

@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { LoginForm } from '@/components/auth/login-form'
  
 export default function LoginPage() {
@@ -8,9 +9,12 @@ export default function LoginPage() {
           Sistema de Cocina Industrial
         </h1>
         <p className="mb-6 text-sm text-slate-500">Inicia sesión para continuar</p>
-        <LoginForm />
+        
+        {/* Agregamos el Suspense envolviendo a LoginForm */}
+        <Suspense fallback={<div className="text-center text-sm text-slate-400">Cargando formulario...</div>}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   )
 }
- 

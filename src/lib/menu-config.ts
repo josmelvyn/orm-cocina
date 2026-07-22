@@ -13,6 +13,7 @@ import {
   ClipboardList,
   Receipt,
   Wallet,
+  Banknote,
   BarChart3,
   Users,
   ShieldCheck,
@@ -102,6 +103,12 @@ export const MENU: MenuItem[] = [
       { label: 'Ingresos', href: '/contabilidad/ingresos', icon: Wallet, permisos: ['contabilidad.ver'] },
       { label: 'Gastos', href: '/contabilidad/gastos', icon: Wallet, permisos: ['contabilidad.ver'] },
     ],
+  },
+  {
+    label: 'Caja Chica',
+    href: '/caja-chica',
+    icon: Banknote,
+    permisos: ['contabilidad.ver'],
   },
   {
     label: 'Reportes',

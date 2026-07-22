@@ -16,6 +16,7 @@ export const RUTAS_PROTEGIDAS: { prefijo: string; permisos: string[] }[] = [
   { prefijo: '/conduces', permisos: ['conduce.ver'] },
   { prefijo: '/facturacion', permisos: ['factura.ver'] },
   { prefijo: '/contabilidad', permisos: ['contabilidad.ver'] },
+  { prefijo: '/caja-chica', permisos: ['contabilidad.ver'] },
   { prefijo: '/reportes', permisos: ['reporte.ver'] },
   { prefijo: '/usuarios', permisos: ['usuario.ver'] },
   { prefijo: '/roles', permisos: ['rol.administrar'] },

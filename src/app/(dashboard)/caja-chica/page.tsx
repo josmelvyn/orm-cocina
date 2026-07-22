@@ -17,7 +17,7 @@ export default async function CajaChicaPage() {
     responsable: cajaRaw.responsable,
   }
 
-  const movimientos = movimientosRaw.map((m) => ({
+  const movimientos = movimientosRaw.map((m: (typeof movimientosRaw)[number]) => ({
     id: m.id,
     tipo: m.tipo,
     fecha: m.fecha,
